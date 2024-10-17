@@ -11,7 +11,6 @@ async function fetchData() {
 function isValidWord(word, wordsData) {
     for (const tone in wordsData) {
         for (const category in wordsData[tone]) {
-            // Kiểm tra cả chữ hoa và chữ thường
             if (wordsData[tone][category].includes(word.toLowerCase()) || wordsData[tone][category].includes(word)) {
                 return true;
             }
@@ -22,9 +21,8 @@ function isValidWord(word, wordsData) {
 
 // Hàm tạo từ hợp lệ từ input
 function generateWords(input, wordsData) {
-    // Giữ lại các ký tự có dấu và loại bỏ dấu "/" và khoảng trắng
-    const cleanedInput = input.replace(/[/\s]/g, '');
-    
+    const cleanedInput = input.replace(/[\/\s]/g, ''); // Loại bỏ dấu "/" và khoảng trắng
+
     const chars = cleanedInput.split('');
     const results = [];
 
@@ -53,7 +51,7 @@ async function main(input) {
     const wordsData = await fetchData();
     const validWords = generateWords(input, wordsData);
     const output = [];
-    const inputLength = input.replace(/[/\s]/g, '').length; // Số ký tự tính từng chữ
+    const inputLength = input.replace(/[\/\s]/g, '').length;  // Đếm số lượng chữ cái của input
 
     console.log("Valid words:", validWords);  // Log danh sách từ hợp lệ tìm thấy
 
@@ -62,14 +60,14 @@ async function main(input) {
         for (let j = 0; j < validWords.length; j++) {
             if (i !== j) {
                 const combined = `${validWords[i]} ${validWords[j]}`;
-                const combinedLength = combined.replace(/\s+/g, '').length; // Đếm ký tự không khoảng trắng
+                const combinedLength = combined.replace(/\s+/g, '').length;
                 const combinedChars = combined.replace(/\s+/g, '').split('');
-                const inputChars = input.replace(/[/\s]/g, '').split('');
+                const inputChars = input.replace(/\s+/g, '').split('');
 
                 console.log("Checking combination:", combined);  // Log quá trình kiểm tra tổ hợp
 
-                // Kiểm tra xem mỗi ký tự chỉ được sử dụng 1 lần trong cặp từ
-                if (combinedLength === inputLength && combinedChars.every(char => inputChars.includes(char))) {
+                // Kiểm tra số lượng ký tự của tổ hợp phải bằng với input
+                if (combinedLength === inputLength) {
                     const inputCharsCopy = [...inputChars];
                     let validCombination = true;
 
@@ -79,6 +77,7 @@ async function main(input) {
                             inputCharsCopy.splice(index, 1); // Xóa ký tự khỏi mảng để tránh trùng lặp
                         } else {
                             validCombination = false;
+                            console.log(`Duplicate character found: ${char} in combination: ${combined}`);
                             break;
                         }
                     }
@@ -87,12 +86,31 @@ async function main(input) {
                         output.push(combined);
                         console.log("Valid combination found:", combined);  // Log tổ hợp hợp lệ tìm thấy
                     }
+                } else {
+                    console.log(`Combination length mismatch: ${combined} (Length: ${combinedLength}) vs Input Length: ${inputLength}`);
                 }
             }
         }
     }
 
-    return output.length > 0 ? output : ["Không có kết quả nào."];
+    // Định dạng kết quả và lọc các output không có chữ cái đầu tiên viết hoa ở **cả hai từ**
+    const formattedOutput = output.filter(item => {
+        const words = item.split(' ');
+
+        // Kiểm tra nếu cả hai từ trong tổ hợp đều bắt đầu bằng chữ hoa
+        if (words.length === 2) {
+            return /^[A-Z]/.test(words[0]) && /^[A-Z]/.test(words[1]);
+        }
+        return false;
+    }).map(item => {
+        // Chuyển chữ cái đầu tiên của từ đầu tiên thành chữ hoa, các từ khác viết thường
+        return item.split(' ').map((word, index) => {
+            return index === 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word.toLowerCase();
+        }).join(' ');
+    });
+
+    console.log("Formatted Output:", formattedOutput);
+    return formattedOutput.length > 0 ? formattedOutput : ["Không có kết quả nào."];
 }
 
 // Xử lý sự kiện khi người dùng nhấn nút
@@ -112,5 +130,3 @@ document.getElementById('findButton').addEventListener('click', async () => {
         resultDiv.innerHTML = "Có lỗi xảy ra khi tìm kiếm.";
     }
 });
-
-//Ending
